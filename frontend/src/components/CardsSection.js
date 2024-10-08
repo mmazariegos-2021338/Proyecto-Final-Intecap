@@ -19,7 +19,7 @@ const CardsSection = () => {
       </div>
       <div className="card">
         <img
-          src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=MnwzNzQ4fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&q=80&w=400"
+          src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTQTMALCaUNe14XFJbasfSI0SoyfFP1HRyDRQ&s"
           alt="Ofertas y Promociones"
           className="card-image"
         />
@@ -30,7 +30,7 @@ const CardsSection = () => {
       </div>
       <div className="card">
         <img
-          src="https://images.unsplash.com/photo-1525182008055-f88b95ff7980?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=MnwzNzQ4fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&q=80&w=400"
+          src="https://especializate.usat.edu.pe/wp-content/uploads/2022/05/servicio-al-cliente-importancia.jpg"
           alt="Atención al Cliente"
           className="card-image"
         />
