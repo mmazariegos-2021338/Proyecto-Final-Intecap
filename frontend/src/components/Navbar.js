@@ -7,7 +7,7 @@ const Navbar = () => {
   return (
     <nav style={styles.nav}>
       <div style={styles.logo}>
-        <h1>Bull Shop</h1>
+        <h1>BulletProof Shop</h1>
       </div>
       <ul style={styles.navLinks}>
         <li>
