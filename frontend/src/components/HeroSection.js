@@ -8,10 +8,10 @@ const HeroSection = () => {
   return (
     <div className="hero-section">
       <h1>
-        <Typewriter text="Bienvenido a Marvin Shop" />
+        <Typewriter text="Bienvenidos a Bulletproof" />
       </h1>
       <p className="hero-description">
-        Descubre lo último en tecnología y encuentra los dispositivos que transformarán tu experiencia diaria. 
+        Descubre lo último en tecnología y encuentra los dispositivos que transformarán tu experiencia diaria, Ofresiendote lo mejor siempre. 
       </p>
     </div>
   );

@@ -1,52 +1,107 @@
-// src/components/ClientesList.js
-
-import React, { useEffect, useState } from 'react';
-import { Card, CardContent, CardMedia, Typography, Grid, Container } from '@mui/material';
+// src/components/ClientList.js
+import React, { useState, useEffect } from 'react';
+import {
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+  Paper, TablePagination, TextField, Container, Typography
+} from '@mui/material';
 import api from '../services/api';
 
-const ClientesList = () => {
-  const [clientes, setClientes] = useState([]);
+const ClientList = () => {
+  const [clients, setClients] = useState([]); // Lista de clientes
+  const [filteredClients, setFilteredClients] = useState([]); // Lista filtrada por búsqueda
+  const [searchQuery, setSearchQuery] = useState(''); // Query de búsqueda
+  const [page, setPage] = useState(0); // Página actual
+  const [rowsPerPage, setRowsPerPage] = useState(5); // Filas por página
 
+  // Obtener clientes de la API cuando el componente se monte
   useEffect(() => {
-    // Cargar datos de clientes desde el backend
-    api.get('/clientes/listar')
+    api.get('/clientes/listar') // Endpoint para obtener la lista de clientes
       .then((response) => {
-        setClientes(response.data);
+        setClients(response.data);
+        setFilteredClients(response.data); // Inicialmente no hay filtro
       })
       .catch((error) => {
-        console.error('Error al cargar los clientes:', error);
+        console.error('Error al obtener clientes:', error);
       });
   }, []);
 
+  // Filtrar clientes por nombre o apellido basado en el query de búsqueda
+  useEffect(() => {
+    const results = clients.filter(client =>
+      client.nombre.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      client.apellido.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    setFilteredClients(results);
+  }, [searchQuery, clients]);
+
+  // Cambiar la página
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  // Cambiar el número de filas por página
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0); // Volver a la primera página
+  };
+
   return (
-    <Container sx={{ padding: '30px' }}>
+    <Container 
+    sx={{ marginTop: 4,
+    
+      backgroundColor: '#f0f0f0', // Color de fondo (cambia el color aquí)
+      minHeight: '100vh', // Altura mínima para que cubra toda la pantalla
+      padding: '20px', // Espaciado dentro del contenedor
+
+     }}>
       <Typography variant="h4" gutterBottom>
         Lista de Clientes
       </Typography>
-      <Grid container spacing={3}>
-        {clientes.map((cliente, index) => (
-          <Grid item xs={12} sm={6} md={4} key={cliente.id}>
-            <Card sx={{ boxShadow: '0px 4px 15px rgba(0, 0, 0, 0.1)', backgroundColor: '#1c1c1e', color: '#fff' }}>
-              <CardMedia
-                component="img"
-                height="140"
-                image={`https://randomuser.me/api/portraits/men/${(index % 100)}.jpg`} 
-                alt="User Profile"
-              />
-              <CardContent>
-                <Typography variant="h5" gutterBottom>
-                  {cliente.nombre} {cliente.apellido}
-                </Typography>
-                <Typography variant="body2">
-                  ID: {cliente.id}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
+
+      {/* Campo de búsqueda */}
+      <TextField
+        label="Buscar por Nombre o Apellido"
+        variant="outlined"
+        fullWidth
+        margin="normal"
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+      />
+
+      {/* Tabla de clientes */}
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>ID</TableCell>
+              <TableCell>Nombre</TableCell>
+              <TableCell>Apellido</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {filteredClients.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((client) => (
+              <TableRow key={client.id}>
+                <TableCell>{client.id}</TableCell>
+                <TableCell>{client.nombre}</TableCell>
+                <TableCell>{client.apellido}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      {/* Paginación */}
+      <TablePagination
+        component="div"
+        count={filteredClients.length}
+        page={page}
+        onPageChange={handleChangePage}
+        rowsPerPage={rowsPerPage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+        labelRowsPerPage="Filas por página"
+      />
     </Container>
   );
 };
 
-export default ClientesList;
+export default ClientList;
