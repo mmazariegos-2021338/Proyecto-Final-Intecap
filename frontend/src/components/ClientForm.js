@@ -1,4 +1,4 @@
-// src/components/ClientList.js
+// src/components/ClientList.js js
 import React, { useState, useEffect } from 'react';
 import {
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
