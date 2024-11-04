@@ -1,101 +1,106 @@
 // src/components/Navbar.js
 
-import React from 'react';
-import { Link } from 'react-router-dom';
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous"></link>
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 
-const Navbar = () => {
+function Navbar() {
+  const navigate = useNavigate();
+  const isAuthenticated = !!localStorage.getItem('token'); // Verifica si hay un token en localStorage
+  const [showNavbar, setShowNavbar] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(window.scrollY);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY - lastScrollY > 50) {
+        setShowNavbar(false);
+      } else if (lastScrollY - window.scrollY > 50) {
+        setShowNavbar(true);
+      }
+      setLastScrollY(window.scrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [lastScrollY]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    navigate('/login'); // Redirige a la página de login
+  };
+
   return (
-    <nav style={styles.nav}>
-      <div style={styles.logo}>
-        <h1>BulletProof Shop</h1>
-      </div>
-      <ul style={styles.navLinks}>
-        <li>
-          <Link
-            to="/"
-            style={styles.link}
-            onMouseEnter={(e) => handleHover(e, true)}
-            onMouseLeave={(e) => handleHover(e, false)}
-          >
-            Inicio
-          </Link>
-        </li>
-        <li>
-          <Link
-            to="/clientes"
-            style={styles.link}
-            onMouseEnter={(e) => handleHover(e, true)}
-            onMouseLeave={(e) => handleHover(e, false)}
-          >
-            Clientes
-          </Link>
-        </li>
-        <li>
-          <Link
-            to="/productos"
-            style={styles.link}
-            onMouseEnter={(e) => handleHover(e, true)}
-            onMouseLeave={(e) => handleHover(e, false)}
-          >
-            Productos
-          </Link>
-        </li>
-        <li>
-          <Link
-            to="/dashboard-clientes"
-            style={styles.link}
-            onMouseEnter={(e) => handleHover(e, true)}
-            onMouseLeave={(e) => handleHover(e, false)}
-          >
-            Gestión de Clientes
-          </Link>
-        </li>
-        <li>
-          <Link
-            to="/dashboard-productos"
-            style={styles.link}
-            onMouseEnter={(e) => handleHover(e, true)}
-            onMouseLeave={(e) => handleHover(e, false)}
-          >
-            Gestión de Productos
-          </Link>
-        </li>
+    <nav
+      style={{
+        display: showNavbar ? 'flex' : 'none', // Ocultar o mostrar el navbar de inmediato
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '1rem 2rem',
+        backgroundColor: '#000',
+        boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.5)',
+        position: 'sticky',
+        top: 0,
+        zIndex: 1000,
+      }}
+    >
+      <ul style={{
+        listStyleType: 'none',
+        display: 'flex',
+        gap: '1.5rem',
+        margin: 0,
+        padding: 0,
+      }}>
+        <li><Link to="/" style={linkStyle}>Inicio</Link></li>
+        <li><Link to="/productos" style={linkStyle}>Productos</Link></li>
+
+        {}
+        {isAuthenticated && (
+          <>
+            <li><Link to="/cliente" style={linkStyle}>Clientes</Link></li>
+            <li><Link to="/dashboard-clientes" style={linkStyle}>Gestionar Clientes</Link></li>
+            <li><Link to="/dashboard-productos" style={linkStyle}>Gestionar Productos</Link></li>
+            <li><Link to="/ventas" style={linkStyle}>Registrar Venta</Link></li>
+            <li><Link to="/reporte-ventas" style={linkStyle}>Reporte de Ventas</Link></li>
+          </>
+        )}
       </ul>
+
+      {isAuthenticated ? (
+        <button onClick={handleLogout} style={logoutButtonStyle}>
+          Cerrar Sesión
+        </button>
+      ) : (
+        <Link to="/login" style={loginLinkStyle}>Iniciar Sesión</Link>
+      )}
     </nav>
   );
+}
+
+const linkStyle = {
+  color: '#4caf50',
+  textDecoration: 'none',
+  fontSize: '1.1rem',
+  fontWeight: 'bold',
 };
 
-const handleHover = (e, isHovering) => {
-  e.target.style.color = isHovering ? '#4caf50' : '#fff';
+const logoutButtonStyle = {
+  backgroundColor: '#ff4d4d',
+  color: 'white',
+  border: 'none',
+  padding: '0.5rem 1rem',
+  borderRadius: '4px',
+  fontSize: '1rem',
+  fontWeight: 'bold',
+  cursor: 'pointer',
 };
 
-const styles = {
-  nav: {
-    padding: '20px 50px',
-    backgroundColor: '#1c1c1e',
-    color: '#fff',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    boxShadow: '0px 4px 15px rgba(0, 0, 0, 0.1)',
-  },
-  logo: {
-    fontSize: '1.5em',
-    fontWeight: 'bold',
-  },
-  navLinks: {
-    listStyle: 'none',
-    display: 'flex',
-    gap: '30px',
-    marginLeft: 'auto',
-  },
-  link: {
-    color: '#fff',
-    textDecoration: 'none',
-    fontSize: '1.1em',
-    transition: 'color 0.3s',
-  },
+const loginLinkStyle = {
+  color: '#4caf50',
+  textDecoration: 'none',
+  fontSize: '1.1rem',
+  fontWeight: 'bold',
 };
 
 export default Navbar;

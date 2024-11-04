@@ -1,14 +1,52 @@
 // src/components/ProductForm.js
 
 import React, { useState, useEffect } from 'react';
-import { TextField, Button, Container, Typography } from '@mui/material';
+import { TextField, Button, Typography, Paper } from '@mui/material';
+import { styled } from '@mui/system';
+import Swal from 'sweetalert2';
 import api from '../services/api';
 
-const ProductForm = ({ selectedProduct, onSuccess }) => {
+const FormContainer = styled(Paper)({
+  padding: '2rem',
+  maxWidth: '400px',
+  margin: '0 auto',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  borderRadius: '8px',
+  backgroundColor: 'rgba(30, 30, 30, 0.9)',
+  color: '#ffffff',
+  boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.2)',
+});
+
+const StyledTextField = styled(TextField)({
+  marginBottom: '1.5rem',
+  '& .MuiInputBase-root': {
+    backgroundColor: '#333',
+    borderRadius: '4px',
+    color: '#fff',
+  },
+  '& .MuiFormLabel-root': {
+    color: '#888',
+  },
+  '& .MuiFormLabel-root.Mui-focused': {
+    color: '#4CAF50',
+  },
+});
+
+const StyledButton = styled(Button)({
+  backgroundColor: '#4CAF50',
+  color: '#fff',
+  '&:hover': {
+    backgroundColor: '#388E3C',
+  },
+});
+
+const ProductForm = ({ selectedProduct, onFormSubmit }) => {
   const [formData, setFormData] = useState({
     nombre: '',
     precio: '',
-    stock: ''
+    stock: '',
   });
 
   useEffect(() => {
@@ -16,7 +54,7 @@ const ProductForm = ({ selectedProduct, onSuccess }) => {
       setFormData({
         nombre: selectedProduct.nombre,
         precio: selectedProduct.precio,
-        stock: selectedProduct.stock
+        stock: selectedProduct.stock,
       });
     }
   }, [selectedProduct]);
@@ -28,64 +66,66 @@ const ProductForm = ({ selectedProduct, onSuccess }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (selectedProduct) {
-      // Editar producto existente
-      api.put(`/productos/editar/${selectedProduct.id}`, formData)
-        .then(() => {
-          alert('Producto editado correctamente');
-          onSuccess();
-        })
-        .catch((error) => {
-          console.error('Error al editar producto:', error);
+
+    const apiCall = selectedProduct
+      ? api.put(`/productos/actualizar/${selectedProduct.id}`, formData)
+      : api.post('/productos/guardar', formData);
+
+    apiCall
+      .then((response) => {
+        Swal.fire({
+          title: selectedProduct ? 'Producto editado correctamente' : 'Producto agregado correctamente',
+          icon: 'success',
+          confirmButtonText: 'Ok',
         });
-    } else {
-      // Agregar nuevo producto
-      api.post('/productos/guardar', formData)
-        .then(() => {
-          alert('Producto agregado correctamente');
-          onSuccess();
-        })
-        .catch((error) => {
-          console.error('Error al agregar producto:', error);
+        onFormSubmit(response.data); 
+      })
+      .catch((error) => {
+        Swal.fire({
+          title: 'Error',
+          text: selectedProduct ? 'Error al editar producto' : 'Error al agregar producto',
+          icon: 'error',
+          confirmButtonText: 'Cerrar',
         });
-    }
+        console.error(selectedProduct ? 'Error al editar producto:' : 'Error al agregar producto:', error);
+      });
   };
 
   return (
-    <Container sx={{ padding: '20px' }}>
+    <FormContainer elevation={3}>
       <Typography variant="h5" gutterBottom>
         {selectedProduct ? 'Editar Producto' : 'Agregar Producto'}
       </Typography>
-      <form onSubmit={handleSubmit}>
-        <TextField
+      <form onSubmit={handleSubmit} style={{ width: '100%' }}>
+        <StyledTextField
           label="Nombre"
           name="nombre"
+          variant="outlined"
+          fullWidth
           value={formData.nombre}
           onChange={handleChange}
-          fullWidth
-          margin="normal"
         />
-        <TextField
+        <StyledTextField
           label="Precio"
           name="precio"
+          variant="outlined"
+          fullWidth
           value={formData.precio}
           onChange={handleChange}
-          fullWidth
-          margin="normal"
         />
-        <TextField
+        <StyledTextField
           label="Stock"
           name="stock"
+          variant="outlined"
+          fullWidth
           value={formData.stock}
           onChange={handleChange}
-          fullWidth
-          margin="normal"
         />
-        <Button type="submit" variant="contained" color="primary">
+        <StyledButton type="submit" variant="contained" fullWidth>
           {selectedProduct ? 'Guardar Cambios' : 'Agregar Producto'}
-        </Button>
+        </StyledButton>
       </form>
-    </Container>
+    </FormContainer>
   );
 };
 

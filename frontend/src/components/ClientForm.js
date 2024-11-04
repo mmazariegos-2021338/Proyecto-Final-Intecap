@@ -1,26 +1,63 @@
-// src/components/ClientList.js
 import React, { useState, useEffect } from 'react';
 import {
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Paper, TablePagination, TextField, Container, Typography, Button, Dialog,
+  Paper, TablePagination, TextField, Typography, Button, Dialog,
   DialogActions, DialogContent, DialogTitle, IconButton
 } from '@mui/material';
 import { Add, Edit, Delete } from '@mui/icons-material';
-import api from '../services/api'; // Suponiendo que tienes este servicio configurado
-import '../styles/Home.css';
+import { Container } from '@mui/material';
+import { styled } from '@mui/system';
+import Swal from 'sweetalert2';
+import api from '../services/api';
 
+const StyledContainer = styled(Container)({
+  marginTop: '4rem',
+  backgroundColor: 'rgba(30, 30, 30, 0.9)',
+  minHeight: '100vh',
+  padding: '2rem',
+  borderRadius: '10px',
+  color: '#ffffff',
+  boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.4)',
+});
+
+const StyledTextField = styled(TextField)({
+  marginBottom: '1rem',
+  '& .MuiInputBase-root': {
+    backgroundColor: '#333',
+    borderRadius: '4px',
+    color: '#fff',
+  },
+  '& .MuiFormLabel-root': {
+    color: '#888',
+  },
+  '& .MuiFormLabel-root.Mui-focused': {
+    color: '#4CAF50',
+  },
+});
+
+const StyledButton = styled(Button)({
+  backgroundColor: '#4CAF50',
+  color: '#fff',
+  '&:hover': {
+    backgroundColor: '#388E3C',
+  },
+  marginBottom: '1rem',
+});
+
+const StyledTableContainer = styled(TableContainer)({
+  backgroundColor: '#1c1c1e',
+});
 
 const ClientList = () => {
-  const [clients, setClients] = useState([]); // Lista de clientes
-  const [filteredClients, setFilteredClients] = useState([]); // Lista filtrada
-  const [searchQuery, setSearchQuery] = useState(''); // Búsqueda
-  const [page, setPage] = useState(0); // Página actual
-  const [rowsPerPage, setRowsPerPage] = useState(5); // Filas por página
-  const [openDialog, setOpenDialog] = useState(false); // Estado del modal
-  const [currentClient, setCurrentClient] = useState(null); // Cliente seleccionado
-  const [formData, setFormData] = useState({ nombre: '', apellido: '', }); // Datos del formulario
+  const [clients, setClients] = useState([]);
+  const [filteredClients, setFilteredClients] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [selectedClient, setSelectedClient] = useState(null);
+  const [formData, setFormData] = useState({ nombre: '', apellido: '' });
 
-  // Obtener clientes de la API
   useEffect(() => {
     fetchClients();
   }, []);
@@ -36,99 +73,123 @@ const ClientList = () => {
       });
   };
 
-  // Filtrar clientes por búsqueda
   useEffect(() => {
     const results = clients.filter(client =>
-      client.nombre.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      client.apellido.toLowerCase().includes(searchQuery.toLowerCase())
+      (client.nombre ? client.nombre.toLowerCase() : "").includes(searchQuery.toLowerCase()) ||
+      (client.apellido ? client.apellido.toLowerCase() : "").includes(searchQuery.toLowerCase())
     );
     setFilteredClients(results);
   }, [searchQuery, clients]);
 
-  // Abrir el modal para agregar o editar cliente
   const handleOpenDialog = (client = null) => {
-    setCurrentClient(client); // Si es null, es agregar
-    setFormData(client ? { nombre: client.nombre, apellido: client.apellido } : { nombre: '', apellido: '' , });
+    setSelectedClient(client);
+    setFormData(client ? { nombre: client.nombre, apellido: client.apellido } : { nombre: '', apellido: '' });
     setOpenDialog(true);
   };
 
-  // Cerrar el modal
   const handleCloseDialog = () => {
     setOpenDialog(false);
+    setSelectedClient(null);
   };
 
-  // Manejar cambios en el formulario
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
-  // Guardar o actualizar cliente
   const handleSaveClient = () => {
-    if (currentClient) {
-      // Editar cliente
-      api.put(`/clientes/editar/${currentClient.id}`, formData)
-        .then(() => {
-          alert('Cliente actualizado correctamente');
-          fetchClients();
+    const apiCall = selectedClient
+      ? api.put(`/clientes/actualizar/${selectedClient.id}`, formData)
+      : api.post('/clientes/guardar', formData);
+
+    apiCall
+      .then((response) => {
+        Swal.fire({
+          title: selectedClient ? 'Cliente actualizado correctamente' : 'Cliente agregado correctamente',
+          icon: 'success',
+          confirmButtonText: 'Ok',
+        }).then(() => {
+          if (selectedClient) {
+            // Actualiza directamente el cliente en el estado de clients
+            setClients(prevClients =>
+              prevClients.map(client =>
+                client.id === selectedClient.id ? { ...client, ...formData } : client
+              )
+            );
+          } else {
+            // Agrega el nuevo cliente al estado de clients
+            setClients(prevClients => [...prevClients, response.data]);
+          }
+          setFilteredClients(prevClients =>
+            prevClients.map(client =>
+              client.id === selectedClient?.id ? { ...client, ...formData } : client
+            )
+          );
           handleCloseDialog();
-        })
-        .catch((error) => {
-          console.error('Error al editar cliente:', error);
         });
-    } else {
-      // Agregar nuevo cliente
-      api.post('/clientes/guardar', formData)
-        .then(() => {
-          alert('Cliente agregado correctamente');
-          fetchClients();
-          handleCloseDialog();
-        })
-        .catch((error) => {
-          console.error('Error al agregar cliente:', error);
+      })
+      .catch((error) => {
+        Swal.fire({
+          title: 'Error',
+          text: selectedClient ? 'Error al editar cliente' : 'Error al agregar cliente',
+          icon: 'error',
+          confirmButtonText: 'Cerrar',
         });
-    }
+        console.error(selectedClient ? 'Error al editar cliente:' : 'Error al agregar cliente:', error);
+      });
   };
 
-  // Eliminar cliente
   const handleDeleteClient = (clientId) => {
-    if (window.confirm('¿Estás seguro de que deseas eliminar este cliente?')) {
-      api.delete(`/clientes/eliminar/${clientId}`)
-        .then(() => {
-          alert('Cliente eliminado correctamente');
-          fetchClients();
-        })
-        .catch((error) => {
-          console.error('Error al eliminar cliente:', error);
-        });
-    }
+    Swal.fire({
+      title: '¿Estás seguro?',
+      text: 'Esta acción eliminará al cliente de forma permanente',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        api.delete(`/clientes/eliminar/${clientId}`)
+          .then(() => {
+            Swal.fire({
+              title: 'Eliminado',
+              text: 'El cliente ha sido eliminado correctamente.',
+              icon: 'success',
+              confirmButtonText: 'Ok',
+            });
+            setClients((prevClients) => prevClients.filter((client) => client.id !== clientId));
+            setFilteredClients((prevClients) => prevClients.filter((client) => client.id !== clientId));
+          })
+          .catch((error) => {
+            Swal.fire({
+              title: 'Error',
+              text: 'Ocurrió un error al eliminar el cliente.',
+              icon: 'error',
+              confirmButtonText: 'Cerrar',
+            });
+            console.error('Error al eliminar cliente:', error);
+          });
+      }
+    });
   };
 
-  // Cambiar la página
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
   };
 
-  // Cambiar el número de filas por página
   const handleChangeRowsPerPage = (event) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
   };
 
   return (
-    <Container   
-   sx={{ marginTop: 4, 
-    backgroundColor: '#e0f7fa', // Color de fondo
-    minHeight: '100vh', // Asegura que cubra toda la pantalla
-    padding: '50px', // Opcional
-    }}>
-
+    <StyledContainer>
       <Typography variant="h4" gutterBottom>
         Lista de Clientes
       </Typography>
-
-      {/* Campo de búsqueda */}
-      <TextField
+      <StyledTextField
         label="Buscar por Nombre o Apellido"
         variant="outlined"
         fullWidth
@@ -136,27 +197,21 @@ const ClientList = () => {
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
       />
-
-      {/* Botón para agregar cliente */}
-      <Button
+      <StyledButton
         variant="contained"
-        color="primary"
         startIcon={<Add />}
         onClick={() => handleOpenDialog()}
-        sx={{ marginBottom: 2 }}
       >
         Agregar Cliente
-      </Button>
-
-      {/* Tabla de clientes */}
-      <TableContainer className='color' component={Paper}>
+      </StyledButton>
+      <StyledTableContainer component={Paper}>
         <Table>
           <TableHead>
             <TableRow>
               <TableCell>ID</TableCell>
               <TableCell>Nombre</TableCell>
               <TableCell>Apellido</TableCell>
-              <TableCell>Producto</TableCell>
+              <TableCell>Acciones</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -166,10 +221,10 @@ const ClientList = () => {
                 <TableCell>{client.nombre}</TableCell>
                 <TableCell>{client.apellido}</TableCell>
                 <TableCell>
-                  <IconButton color="primary" onClick={() => handleOpenDialog(client)}>
+                  <IconButton onClick={() => handleOpenDialog(client)} color="primary">
                     <Edit />
                   </IconButton>
-                  <IconButton color="secondary" onClick={() => handleDeleteClient(client.id)}>
+                  <IconButton onClick={() => handleDeleteClient(client.id)} color="secondary">
                     <Delete />
                   </IconButton>
                 </TableCell>
@@ -177,9 +232,7 @@ const ClientList = () => {
             ))}
           </TableBody>
         </Table>
-      </TableContainer>
-
-      {/* Paginación */}
+      </StyledTableContainer>
       <TablePagination
         component="div"
         count={filteredClients.length}
@@ -189,10 +242,8 @@ const ClientList = () => {
         onRowsPerPageChange={handleChangeRowsPerPage}
         labelRowsPerPage="Filas por página"
       />
-
-      {/* Modal de agregar/editar cliente */}
       <Dialog open={openDialog} onClose={handleCloseDialog}>
-        <DialogTitle>{currentClient ? 'Editar Cliente' : 'Agregar Cliente'}</DialogTitle>
+        <DialogTitle>{selectedClient ? 'Editar Cliente' : 'Agregar Cliente'}</DialogTitle>
         <DialogContent>
           <TextField
             label="Nombre"
@@ -212,13 +263,13 @@ const ClientList = () => {
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancelar</Button>
+          <Button onClick={handleCloseDialog} color="error">Cancelar</Button>
           <Button onClick={handleSaveClient} color="primary">
-            {currentClient ? 'Guardar Cambios' : 'Agregar'}
+            {selectedClient ? 'Guardar Cambios' : 'Agregar'}
           </Button>
         </DialogActions>
       </Dialog>
-    </Container>
+    </StyledContainer>
   );
 };
 
